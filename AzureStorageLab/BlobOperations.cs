@@ -33,6 +33,8 @@ namespace AzureStorageLab
         CloudBlobContainer cloudBlobContainer { get; set; }
         CloudBlockBlob cloudBlockBlob { get; set; }
 
+        string localFile = string.Empty;
+
         public void SetUpObjects()
         {
             //make the container name unique so if you run this over and over, you won't
@@ -64,6 +66,7 @@ namespace AzureStorageLab
             UploadBlobs();
 
             GetListOfBlobs();
+            DownloadBlobs();
             Console.WriteLine("Press Any Key to exit.");
             Console.ReadLine();
         }
@@ -108,6 +111,30 @@ namespace AzureStorageLab
                 Console.WriteLine("blob name = {0}", oneFile);
             }
             Console.WriteLine("after list");
+        }
+
+        public void DownloadBlobs()
+        {
+            //create a subfolder for the downloaded files
+            // under the folder with the images that we were using for the upload
+            localDownloadPath = Path.Combine(localPicsToUploadPath, "downloaded");
+            if (!Directory.Exists(localDownloadPath))
+            {
+                Directory.CreateDirectory(localDownloadPath);
+            }
+
+            cloudBlockBlob = cloudBlobContainer.GetBlockBlobReference(image1Name);
+            if (cloudBlockBlob.Exists())
+            {
+                localFile = Path.Combine(localDownloadPath, image1Name);
+                cloudBlockBlob.DownloadToFile(localFile, FileMode.Create);
+            }
+            cloudBlockBlob = cloudBlobContainer.GetBlockBlobReference(image2Name);
+            if (cloudBlockBlob.Exists())
+            {
+                localFile = Path.Combine(localDownloadPath, image2Name);
+                cloudBlockBlob.DownloadToFile(localFile, FileMode.Create);
+            }
         }
     }
 }
