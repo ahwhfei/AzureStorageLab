@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -11,7 +12,10 @@ namespace AzureStorageLab
     public class BlobOperations
     {
         string storageAccountName = "whf1122";
-        string storageAccountKey = "1YvorjJB5bpeDBzn3N6UutKl2etXDUPZeComvrYC2srFYwsHaQ+XBRk8zUUEbuBtLG9cK5tK+03aXB1lALRMyQ==";
+
+        string storageAccountKey =
+            "1YvorjJB5bpeDBzn3N6UutKl2etXDUPZeComvrYC2srFYwsHaQ+XBRk8zUUEbuBtLG9cK5tK+03aXB1lALRMyQ==";
+
         string containerName = "blob-ops";
         string localPicsToUploadPath = @"F:\OpsgilityTraining\Images";
         string localDownloadPath;
@@ -36,8 +40,8 @@ namespace AzureStorageLab
             containerName = containerName + "-" + System.Guid.NewGuid().ToString().Substring(0, 12);
             //set the connection string
             ConnectionString =
-            string.Format(@"DefaultEndpointsProtocol=https;AccountName={0};AccountKey={1}",
-            storageAccountName, storageAccountKey);
+                string.Format(@"DefaultEndpointsProtocol=https;AccountName={0};AccountKey={1}",
+                    storageAccountName, storageAccountKey);
             //get reference to storage account
             cloudStorageAccount = CloudStorageAccount.Parse(ConnectionString);
             //get reference to the cloud blob client
@@ -57,6 +61,53 @@ namespace AzureStorageLab
         {
             //set up the objects
             SetUpObjects();
+            UploadBlobs();
+
+            GetListOfBlobs();
+            Console.WriteLine("Press Any Key to exit.");
+            Console.ReadLine();
+        }
+
+        public void UploadBlobs()
+        {
+            //get a reference to where the block blob will go, then upload the local file
+            cloudBlockBlob = cloudBlobContainer.GetBlockBlobReference(image1Name);
+            cloudBlockBlob.UploadFromFile(Path.Combine(localPicsToUploadPath, image1Name));
+            cloudBlockBlob = cloudBlobContainer.GetBlockBlobReference(image2Name);
+            cloudBlockBlob.UploadFromFile(Path.Combine(localPicsToUploadPath, image2Name));
+            cloudBlockBlob = cloudBlobContainer.GetBlockBlobReference(image3Name);
+            cloudBlockBlob.UploadFromFile(Path.Combine(localPicsToUploadPath, image3Name));
+
+            //let's upload a blob with a pseudofolder in the name
+            cloudBlockBlob = cloudBlobContainer.GetBlockBlobReference(pseudoFolder + image4Name);
+            cloudBlockBlob.UploadFromFile(Path.Combine(localPicsToUploadPath, image4Name));
+
+            //let's upload a text blob
+            string textToUpload = "Opsgility makes training fun!";
+            cloudBlockBlob = cloudBlobContainer.GetBlockBlobReference(pseudoFolder + textFileName);
+            cloudBlockBlob.UploadText(textToUpload);
+        }
+
+        private string GetFileNameFromBlobURI(Uri theUri, string containerName)
+        {
+            string theFile = theUri.ToString();
+            int dirIndex = theFile.IndexOf(containerName);
+            string oneFile = theFile.Substring(dirIndex + containerName.Length + 1,
+                theFile.Length - (dirIndex + containerName.Length + 1));
+            return oneFile;
+        }
+
+        public void GetListOfBlobs()
+        {
+            Console.WriteLine(string.Empty);
+            Console.WriteLine("before list");
+            foreach (IListBlobItem blobItem in
+                cloudBlobContainer.ListBlobs(null, true, BlobListingDetails.None))
+            {
+                string oneFile = GetFileNameFromBlobURI(blobItem.Uri, containerName);
+                Console.WriteLine("blob name = {0}", oneFile);
+            }
+            Console.WriteLine("after list");
         }
     }
 }
