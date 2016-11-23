@@ -67,6 +67,17 @@ namespace AzureStorageLab
 
             GetListOfBlobs();
             DownloadBlobs();
+
+            CopyBlob();
+            GetListOfBlobs();
+
+            BlobProperties();
+
+            DeleteOneBlob();
+            GetListOfBlobs();
+
+            CleanUp();
+
             Console.WriteLine("Press Any Key to exit.");
             Console.ReadLine();
         }
@@ -134,6 +145,110 @@ namespace AzureStorageLab
             {
                 localFile = Path.Combine(localDownloadPath, image2Name);
                 cloudBlockBlob.DownloadToFile(localFile, FileMode.Create);
+            }
+        }
+
+        public void CopyBlob()
+        {
+            //copy from image1name
+            cloudBlockBlob = cloudBlobContainer.GetBlockBlobReference(image1Name);
+            //get a reference to the destination blob.
+            CloudBlockBlob destBlob = cloudBlobContainer.GetBlockBlobReference("copyof_" + image1Name);
+            //start the copy from the source blob (cloudBlockBlob) to the destination blob.
+            destBlob.StartCopy(cloudBlockBlob);
+        }
+
+        public void BlobProperties()
+        {
+            //let's look at snowy cabin, which is image4 and is in the pseudo-folder
+            cloudBlockBlob = cloudBlobContainer.GetBlockBlobReference(pseudoFolder + image4Name);
+
+            Console.WriteLine(string.Empty);
+            //display some of the blob properties
+            Console.WriteLine("blob type = " + cloudBlockBlob.BlobType);
+            Console.WriteLine("blob name = " + cloudBlockBlob.Name);
+            Console.WriteLine("blob URI = " + cloudBlockBlob.Uri);
+
+            //update the system properties on the object and display a couple of them
+            cloudBlockBlob.FetchAttributes();
+            Console.WriteLine("content type = " + cloudBlockBlob.Properties.ContentType);
+            Console.WriteLine("size = " + cloudBlockBlob.Properties.Length);
+
+            //change the content type from 'application/octet stream' to 'image/jpg'
+            cloudBlockBlob.Properties.ContentType = "image/jpg";
+            cloudBlockBlob.SetProperties();
+            //refresh the attributes and write out the content type again
+            cloudBlockBlob.FetchAttributes();
+            Console.WriteLine("content type = " + cloudBlockBlob.Properties.ContentType);
+
+            //print the current values
+            PrintMetadata();
+            //set some metadata and save it
+            cloudBlockBlob.Metadata["First"] = "number one";
+            cloudBlockBlob.Metadata["Second"] = "number two";
+            cloudBlockBlob.Metadata["Three"] = "number three";
+            cloudBlockBlob.SetMetadata();
+            //print it out again
+            PrintMetadata();
+
+            //now clear the metadata, save the change,
+            // and then print it again (empty list)
+            cloudBlockBlob.Metadata.Clear();
+            cloudBlockBlob.SetMetadata();
+            PrintMetadata();
+        }
+
+        public void PrintMetadata()
+        {
+            //fetch the attributes of the blob to make sure they are current
+            cloudBlockBlob.FetchAttributes();
+            //if there is metaata, loop throught he dictionary and print it out
+            int index = 0;
+            if (cloudBlockBlob.Metadata.Count > 0)
+            {
+                IDictionary<string, string> metadata = cloudBlockBlob.Metadata;
+                foreach (KeyValuePair<string, string> oneMetadata in metadata)
+                {
+                    index++;
+                    Console.WriteLine("metadata {0} = {1}, {2}", index,
+                    oneMetadata.Key.ToString(), oneMetadata.Value.ToString());
+                }
+            }
+            else
+            {
+                Console.WriteLine("No metadata found.");
+            }
+        }
+
+        public void DeleteOneBlob()
+        {
+            //delete one blob
+            string blobName = image3Name;
+            cloudBlockBlob =
+            cloudBlobContainer.GetBlockBlobReference(pseudoFolder + textFileName);
+            cloudBlockBlob.Delete();
+        }
+
+        public void DeleteAllBlobs()
+        {
+            List<string> listOBlobs = new List<string>();
+            foreach (IListBlobItem blobItem in
+            cloudBlobContainer.ListBlobs(null, true, BlobListingDetails.None))
+            {
+                string oneFile = GetFileNameFromBlobURI(blobItem.Uri, containerName);
+                cloudBlockBlob = cloudBlobContainer.GetBlockBlobReference(oneFile);
+                cloudBlockBlob.Delete();
+            }
+        }
+
+        public void CleanUp()
+        {
+            DeleteAllBlobs();
+            GetListOfBlobs();
+            cloudBlobContainer.Delete();
+            if (!string.IsNullOrEmpty(localDownloadPath))
+            {
+                Directory.Delete(localDownloadPath, true);
             }
         }
     }
