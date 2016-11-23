@@ -10,6 +10,8 @@ namespace AzureStorageLab
     {
         static void Main(string[] args)
         {
+            BlobOperations blobOps = new BlobOperations();
+            blobOps.BasicBlobOps();
         }
     }
 }
